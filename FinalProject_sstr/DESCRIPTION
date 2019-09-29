@@ -1,0 +1,18 @@
+Package: sstr
+Type: Package
+Title: Spectral Solution Technique Analysis
+Version: 0.1.0
+Authors@R: person("Violeta", "Sosa Leon", , "vsosaleo@uni-muenster.de", c("aut", "cre"))
+Author: Violeta Sosa Leon [aut, cre]
+Maintainer: Violeta Sosa Leon <vsosaleo@uni-muenster.de>
+Description: The package is intented to review the first steps for implementing the Spectral Solution following the algorithm described by Marius Leordeanu. For the scoring process, the Pagerank algorihtm by Google is used. The objective is to optimize the pair selection in matching features for Similarity Matrices. The input is the Similarity Matrices generated between two set of features Sketchmap and Metricmap. Finally, a short comparison is made between different technologies.
+Depends: R (>= 2.10)
+License: GPL-2
+Imports: SparseM, Matrix, readr, methods
+Encoding: UTF-8
+LazyData: true
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+RoxygenNote: 6.1.1

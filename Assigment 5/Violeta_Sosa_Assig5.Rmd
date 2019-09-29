@@ -1,0 +1,224 @@
+---
+title: "Spatial data science with R"
+author: "Violeta Sosa"
+date: "15 de mayo de 2019"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: simplex
+    highlight: tango
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercises for the meeting of May 17, 2019
+
+Hand in: zip file with .Rmd and .html file, with answers to the exercises of the chapter: https://keen-swartz-3146c4.netlify.com/featureattributes.html as well as those in the "further exercises" html for today.
+
+## Exercise 1
+
+Add a variable to the `nc` dataset by `nc$State = "North Carolina"`. Which value should you attach to this variable for the attribute-geometry relationship (agr)?
+```{r warning=FALSE}
+library(sf)
+library(tidyverse)
+
+nc <- system.file("gpkg/nc.gpkg", package="sf") %>%
+  read_sf() %>%
+  st_transform(32119)
+nc2 <- nc %>% select(BIR74, SID74, NAME) %>%
+  st_set_agr(c(BIR74 = "aggregate", SID74 = "aggregate", NAME = "identity"))
+
+nc2%>%st_agr()
+
+nc
+nc$State = "North Carolina"
+nc
+nc1 <- nc %>% select(NAME,State) %>%
+  st_set_agr(c(State= "constant"))
+
+nc1 %>%
+  st_agr()
+```
+
+_We should attach a constant agr because this value is valid for all the geometries_
+
+## Exercise 2
+
+Create a new sf object from the geometry obtained by `st_union(nc)`, and assign `"North Carolina"` to the variable `State`. Which `agr` can you now assign to this attribute variable?
+```{r warning=FALSE}
+(state_geom=st_sf(st_union(nc)))
+plot(state_geom)
+state_geom$State="North Carolina"
+
+st2<-state_geom%>%select(State)%>%
+  st_set_agr(c(State="identity"))
+
+st2%>%
+  st_agr()
+
+st2
+```
+_This variable State is now a `identity variable` because it represents the whole geometry_
+
+## Exercise 3
+
+Use `st_area` to add a variable with name `area` to `nc`. Compare the `area` and `AREA` variables in the `nc` dataset. What are the units of `AREA`? Are the two linearly related? If there are discrepancies, what could be the cause?
+
+```{r warning=FALSE}
+nc$area=st_area(nc)
+nc%>%select(NAME, AREA,area)
+```
+
+_`AREA` units are in arc degrees corresponding to 100 000 meters in the metric system. They are related by `AREA=area m^2 * 100000 m^2`. Being more strict if `L` is an arc degree and `r` is the Earth radius in meters we have_
+
+$$L=\frac{2πr}{360}$$
+
+_Calculating `L` and by replace `r`_ 
+
+$$L=\frac{2π*6378000}{360}$$
+
+_we have that an arc degree is `113317.099 meters`. The discrepancies are because of the projections system. AS the Earth shape behaves as a geoide, there are differences in the areas projected per CRS._
+
+## Exercise 4
+
+Is the `area` variable intensive or extensive? Is its `agr` equal to `constant`, `identity` or `aggregate`?
+
+```{r warning=FALSE}
+nc%>%select(NAME, AREA,area)%>%
+  st_agr()
+
+```
+_The `area` variable is extensive because of its property of `change` if it is splitted for example. It is mutable. It is `agr` is equal to `aggregate` according to its nature of being a "summary value over the geometry" [1]_ 
+
+## Exercise 5
+
+Find the name of the county that contains POINT(-78.34046 35.017)
+
+```{r warning=FALSE}
+#Create the point
+look<-st_sfc(st_point(c(-78.34046,35.017)),crs=4326)
+plot(st_geometry(st_transform(nc,4326)), col = terrain.colors(50,alpha=0.5),main="Counties and Point")
+plot(look,col="red",pch = 19, add=TRUE)
+#Query the intersection
+container=(st_intersects(look,st_transform(nc,4326)))
+states<-nc[unlist(container),]
+states$NAME
+#Ploting the result
+plot(st_geometry(states),col="orange",main="States that intersects POINT(-78.34046 35.017)")
+```
+
+## Exercise 6
+
+Find the names of all counties with boundaries that touch county `Sampson`.
+
+```{r warning=FALSE}
+sampson= nc[nc$NAME == "Sampson", ]
+sampson_to=nc[unlist(st_touches(sampson,nc)),]
+#List of names
+sampson_to$NAME
+plot(st_geometry(sampson_to),col="orange",main="Counties with boundaries that touch county `Sampson`.")
+plot(st_geometry(sampson), col="red",add=TRUE)
+
+```
+
+## Exercise 7
+
+List the names of all counties that are less than 50 km away from county `Sampson`.
+
+```{r warning=FALSE}
+sampson_close=nc[unlist(st_is_within_distance(sampson,nc,dist=50000)),]
+sampson_close$NAME
+```
+
+For the following exercises, we will work with naturalearth:
+
+```{r warning=FALSE}
+library(rnaturalearth)
+e = ne_countries(returnclass = "sf")["pop_est"]
+```
+
+
+## Exercise 8
+
+Plot the variable pop_est. Which projection is used?
+
+```{r warning=FALSE}
+e
+plot(e)  
+```
+
+_The projection used is WGS84_
+
+## Exercise 9
+
+Plot the variable converted to +proj=ortho, see here. What happened to Antarctica?
+
+```{r warning=FALSE}
+e2<-st_transform(e,st_crs("+proj=ortho"))
+plot(e2)
+```
+
+_Antarctica is no longer visible in the plot_
+
+## Exercise 10
+
+Plot the same data with the ortho projection, adding `lat_0=-90`, `lat_0=90`, `lon_0=90`, `lon_0=-90` for four different views. Try to explain what happens.
+
+```{r warning=FALSE}
+plot(st_transform(e,st_crs("+proj=ortho +lat_0=-90")),col = terrain.colors(50,alpha=0.5),main="Natural Earth Dataset - South Pole view")
+plot(st_transform(e,st_crs("+proj=ortho +lat_0=90")),col = terrain.colors(50,alpha=0.5),main="Natural Earth Dataset - North Pole view")
+plot(st_transform(e,st_crs("+proj=ortho +long_0=90")),col = terrain.colors(50,alpha=0.5),main="Natural Earth Dataset - Side Pole view")
+plot(st_transform(e,st_crs("+proj=ortho +long_0=-90")),col = terrain.colors(50,alpha=0.5),main="Natural Earth Dataset - Side Pole view")
+
+```
+
+## Exercise 11
+
+Create a polygon of the northern hemisphere. Use that to get the intersection with e, and plot that with `lat_0=90`.
+
+```{r warning=FALSE}
+#Get North Hemisphere
+hnorth<-st_transform(e,st_crs("+proj=ortho +lat_0=90"))
+plot(hnorth,col = terrain.colors(50,alpha=0.5),main="Natural Earth Dataset - North Pole view")
+#Create a unique geometry
+hnorthclean<-st_union(st_geometry(e[unlist((!is.na(st_dimension(hnorth)))),]))
+plot(hnorthclean)
+#Plot the new geometry from pole north view
+hnorthcleanview<-st_transform(hnorthclean,st_crs("+proj=ortho +lat_0=90"))
+plot(hnorthcleanview,col = terrain.colors(50,alpha=0.5),main="Natural Earth Dataset - North Pole view")
+
+#Intersection with e
+(result<-st_intersects(hnorthclean,e,sparse=FALSE))
+geom_in<-e[unlist(result),]
+
+result2<-st_transform(geom_in,st_crs("+proj=ortho +lat_0=90"))
+#Intersection plotting
+plot(result2,col = terrain.colors(50,alpha=0.5),main="Natural Earth Dataset - North Pole view result")
+
+```
+
+## Exercise 12
+
+For the land mass between latitudes 45 and 55 and longitudes 0 and 10, estimate the total population as well as the average population.
+
+```{r warning=FALSE}
+landmass<-st_crop(e, c(xmin=0, xmax=10, ymin=45, ymax=55))
+plot(landmass,col = terrain.colors(10,alpha=0.5),main="Land Mass crop for Natural Earth Dataset")
+(total_pop=sum(landmass$pop_est))
+(avg_pop=mean(landmass$pop_est))
+```
+
+## References
+_[1] Spatial Data Science_ https://keen-swartz-3146c4.netlify.com/
+
+_[2] R Documentation_ https://www.rdocumentation.org
+
+_[3] sf Github_ https://r-spatial.github.io/sf/articles/sf1.html

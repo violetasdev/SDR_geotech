@@ -1,0 +1,149 @@
+---
+title: "Exercises for the meeting of May 10, 2019"
+author: "Violeta Sosa"
+date: "May 09, 2019"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: simplex
+    highlight: tango
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(sf)
+library(tidyverse)
+library(units)
+library(lwgeom)
+
+
+```
+
+## Exercises for the meeting of May 10, 2019
+
+Exercises related to simple features in R (1). Try to upload your answer to the LearnWeb assigned as a .zip file (not a .rar file) containing two files: (i) an R markdown file and (ii) an html file that resulted from knitting the R markdown file. (If this is problematic, use pdf or something else.)
+
+##Exercise 1
+Look for a shapefile; download it; import it with `sf::st_read`, and plot it. What does it show?
+
+```{r warning=FALSE}
+shapeName <- st_read('depto/depto.shp')
+shapeName
+plot(shapeName, main="Colombia shapefile")
+```
+
+
+_The plot shows a map per each one of the attributes defined in the shapefile's attribute table._
+
+##Exercise 2
+Try plotting one of the attribute variables using a different color scheme
+
+```{r warning=FALSE}
+shapeName%>%select(AREA) %>%plot(graticule = TRUE, axes = TRUE)
+shapeName%>%select(AREA) %>%plot(graticule = TRUE, axes = TRUE, col = heat.colors(10))
+shapeName%>%select(DPTO) %>%plot(graticule = TRUE, axes = TRUE, col = topo.colors(50))
+
+```
+
+##Exercise 3
+What is the class of the object plotted? Plot only the geometry using `st geometry`
+```{r warning=FALSE}
+class(shapeName)
+plot(st_geometry(shapeName), main="Colombia Geometry")
+```
+
+##Exercise 4
+Which layers does the GeoPackage http://www.geopackage.org/data/sample1_2.gpkg have? Import them both in R, using `sf`. Call the object with feature geometries `x1`.
+```{r warning=FALSE}
+st_layers("sample1_2.gpkg")
+
+dataset <- ("sample1_2.gpkg")
+
+counties<-read_sf(dataset, "counties")
+countiestbl<-read_sf(dataset, "countiestbl")
+
+x1<-counties
+x1
+x1%>%select(AREA) %>%plot(graticule = TRUE, axes = TRUE, main="Colombia (Only) Geometry Plot")
+```
+
+##Exercise 5
+Create an `sf` object with a point geometry at latitude `36.21` and longitude `-81.19`
+
+```{r warning=FALSE}
+(sfc = st_sfc(st_point(c(-81.19,36.21)), crs = 4269))
+```
+
+##Exercise 6
+Query the features of x1 at this point: plot the resulting geometry, and show the attributes associated with this geometry.
+
+```{r warning=FALSE}
+geometry=st_intersects(sfc,x1)
+geometry
+
+plot(st_geometry(x1[unlist(geometry),]),expandBB = c(2,2,2,2), col=rgb(red = 1, green = 0, blue = 0, alpha = 0.5), main="Resulting Geometries")
+plot(st_geometry(x1), add=TRUE)
+plot(sfc, expandBB = c(10, 10, 10, 10), col = "red", lwd = 5, add=TRUE)
+x1[unlist(geometry),]
+
+```
+
+##Exercise 7
+For the `nc` dataset that ships with package `sf`, compute the area of county Columbus
+
+```{r warning=FALSE}
+(file <- system.file("gpkg/nc.gpkg", package="sf"))
+(file %>% read_sf()  -> nc)
+
+nc%>%select(NAME)%>%filter(NAME=="Columbus") %>%plot(graticule = TRUE, axes = TRUE, col=rgb(red = 1, green = 0, blue = 0, alpha = 0.5), ADD=TRUE, main="Columbus County")
+columbus = nc %>% filter(NAME == "Columbus")
+st_area(columbus)
+
+```
+
+##Exercise 8
+Compute also the same area after transforming the geometry to `EPSG 2264`, and compare the value with that obtained from the unprojected data; express the difference in a percentage.
+
+```{r}
+nc_newgeo<-nc
+(nc_newgeo %>% st_transform(2264) -> nc_newgeo.2264)
+columbus_new = nc_newgeo.2264 %>% filter(NAME == "Columbus")
+(area4267=st_geod_area(columbus))
+(area2264=(st_area(columbus_new) %>% set_units(m^2)))
+
+#New area in percentage
+((area2264/area4267)*100)
+
+```
+
+##Exercise 9
+Create a plot with the `nc` states outlines that has all states that are partly within 50 km from Columbus filled with color green.
+
+```{r}
+columbusarea = nc[nc$NAME == "Columbus", ]
+(selection= st_is_within_distance(columbusarea,nc, dist = 50))
+plot(st_geometry(nc), main="States partly within 50km from Columbus County")
+plot(st_geometry(nc[unlist(selection),]), add = TRUE, col = 'green')
+
+```
+
+##Exercise 10
+Create a plot with the `nc` states outlines that has all states that are entirely within 100 km from Columbus filled with color red.
+```{r}
+(columbusarea = nc[nc$NAME == "Columbus", ])
+plot(st_geometry(nc),  main="States entirely within 100km from Columbus County")
+
+#Columbus transform for buffer distance calculation 
+nc_tr = st_transform(columbusarea, 3857)
+plot(st_transform(st_buffer(nc_tr, 100000),4267),col=rgb(red = 1, green = 0, blue = 0, alpha = 0.5), border = rgb(red = 1, green = 0, blue = 0, alpha = 0.5), add = TRUE)
+otro=st_transform(st_buffer(nc_tr, 100000),4267)
+contain_true=st_contains(otro,nc)
+plot(st_geometry(nc[unlist(contain_true),]), add = TRUE, col = 'red')
+
+```

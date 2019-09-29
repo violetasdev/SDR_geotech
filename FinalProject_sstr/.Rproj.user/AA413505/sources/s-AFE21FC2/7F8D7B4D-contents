@@ -1,0 +1,125 @@
+---
+title: "Package: Spectral Solution for Matching Graphs"
+author: "Violeta Ana Luz Sosa Leon"
+date: "August 9, 2019"
+output: 
+  knitr:::html_vignette:
+  theme: simplex
+# output: rmarkdown::html_vignette
+
+vignette: >
+  %\VignetteIndexEntry{Package: Spectral Solution for Matching Graphs}
+  %\VignetteEngine{knitr:::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+The library _sstr (Spectral Solution Technique in R)_ is meant to help to find the better candidate pairs for a two graph matching. Leordeanu and Hebert research in 2005, focus on finding secure correspondences between a couple of set of features, and the result is a collection of highly linked assignments represented by a matrix M, picturing the adjacency values of these objects. The definition of this highly linked assignment is done by statistical analysis, calculating the eigenvector value of the features. An appropriate features selection is made, in theory, where related features expose high links scores with a clustered behavior. Whereas, low related features do not show any links rates or if they appear, they show a considerable distance in relation to the central cluster. 
+
+
+Identifying the highly related clusters inside the set of features is one of the ongoing tasks to fulfill an approximation to an optimal solution to the correspondence problem in object recognition.
+
+For doing so, the Spectral Solution Technique is implemented by using an already calculated similarity matrix and the scores, which are defined with the Pagerank algorithm by Google.
+
+In this particular case, we use a sketchmap versus a metric map similarity matrix from the its4land Project [4].
+
+
+#Implementation
+To acomplish this goal, the Spectral Solution Technique is executed by using an already calculated similarity matrix and the scores, which are defined with the Pagerank algorithm by Google. 
+
+```{r setup}
+library(sstr)
+```
+
+This package provide a testing similarity matrix and scores in the directory
+
+_inst\\data\\_
+```{r  echo=TRUE}
+library(readr)
+dataset <- data.matrix(read.csv(system.file("extdata/foo.csv", package = "sstr")))
+scoreSimMa <- data.matrix(read_csv(system.file("extdata/scores2.csv", package = "sstr")))
+```
+
+Next, it is needed to define the size of the first input graph:
+
+```{r  echo=TRUE}
+smap_size=41
+```
+
+With these, is possible to call the main function, _simat_:
+
+```{r  echo=TRUE}
+?simat
+(result_object_sstr<-simat(path=dataset,sketch_map_size=smap_size,scoressm=scoreSimMa))
+
+```
+#Step Wise description
+
+First of all, once the similarity matrix is stored, it is followed by the definition of the working variables _L_ as the number of nodes, _x_ as the elements of the row in the iteration and _x\*_ the maximum eigenvalue, or affinity scores, calculated next for the _Similarity Matrix M_. 
+
+##Execution time
+
+### start
+Returns the system time in which the execution of the affinity analysis started.
+```{r echo=TRUE}
+?start
+```
+
+### end
+Calculates the total system time in which the execution of the affinity analysis was done and returns a difftime class object
+```{r echo=TRUE}
+?end
+```
+
+##Storage variables definition
+
+The definition of L and X can be followed with the functions _construct_l_ and _construct_x_. The algorithm will reject all the objects in the iteration with a lower value and a corresponding label in conflict with _x*_ and collect the high scored and compatibles ones as long there are features left to analyze in _L_. 
+
+```{r echo=TRUE}
+?construct_l
+```
+
+```{r echo=TRUE}
+?construct_x
+```
+
+Additional functionalities are created to encapsulate the workflow: 
+
+##Calculate Metric Map Size
+Based on the sparsed matrix for the similarity matrix and the size of the input graph (sketch map) the estimated metric map size is calculated:
+
+```{r echo=TRUE}
+?metricm_size
+```
+
+##Fetch Affinity values
+
+Finally, _x_ will contain the pairs candidates with the highest confidence of being a correct assignment.
+
+##Returned Objects
+
+The output is a _sstr_ class object containing the pair of features with the highest affinity score for the input A (sketch_map), input B (metric_map) and the execution time.
+
+It is important to hand the execution time in order to see the discrepances between different levels of complexity for similarity matrices. The user will be able to calculate the most likely matches for two input graphs for _n_ fetures in the input A graph.
+
+##Returned Notes / Warnings / Errors
+For the current package, the only observation returned from the _Check Package_ process is regarding the size of the example data as it is more than 32 Mb. As the similarity matrixes are as big as the possible combinations, the code handled this situation with the first attempt of Pagerank by using the _SparseMatrices_. Different libraries are available for creating Sparse Matrices, and the returned structures may differ, making further implementations processes space complexity variable.
+
+## References
+
+[[1] R Stars Library Documentation](https://r-spatial.github.io/stars/reference/st_transform.html)
+
+[2] Leordeanu, M., & Hebert, M. (2005). A spectral technique for correspondence problems using pairwise constraints. Tenth IEEE International Conference on Computer Vision (ICCV’05) Volume 1.
+
+[3] Page, L., Brin, S., Motwani, R., & Winograd, T. (1999). The PageRank Citation Ranking: Bringing Order to the Web.
+
+[4] Chipofya, M.,  Jan, S., Schultz C., Schwering, A. (2017). Towards Smart Sketch Maps for Community-driven Land Tenure Recording Activities. AGILE Conference.  

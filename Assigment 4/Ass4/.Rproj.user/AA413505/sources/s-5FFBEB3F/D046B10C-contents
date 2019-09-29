@@ -1,0 +1,79 @@
+---
+title: "Exercises for the meeting of April 29, 2019"
+author: "Violeta Sosa"
+date: "April 27, 2019"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: simplex
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercises for the meeting of 29 April, 2019
+
+The reading material for this exercise the same as for the previous (the second part of ”Introduction to R” (ch 7-12), found from the R home page or https://cran.r-project.org/doc/manuals/r-release/R-intro.html) 
+
+The exercise will be discussed on Mon, Apr 29.
+
+##Exercise 1
+Read the help page of `?formula, ?model.frame`, and `?model.matrix`
+
+```{r help}
+#?formula
+#?model.frame
+#?model.matrix
+```
+##Exercise 2
+Create a formula, e.g. by `f <- y ~ x` after creating this what does this object mean, or do? Does object `f` exist? Do `x` and `y` exist?
+
+```{r formula}
+as.formula(f <- y ~ x)
+class(f)
+f
+x
+y
+```
+_The code `f <- y ~ x` defines an unevaluated expression. `f` exists as storage for the definition of the arguments `x` as dependent variable and `y` as independent variable, but without making use of them. Consequently, `x` and `y`does not exists yet in the working enviroment._
+
+##Exercise 3
+Create `x` and `y`, e.g. `x <- 1:10` and `y <- 10:1`, and evaluate `model.frame(f)` and `model.frame(f, data.frame(x=x,y=y)[1:3,])`, and explain where `x` and `y` are taken from.
+
+```{r}
+x <- 1:10
+y<-10:1
+model.frame(f)
+model.frame(f, data.frame(x=x,y=y)[1:3,])
+```
+_`model.frame(f)` shows the arguments defined for the formula `f` and `x`and `y` are taken from the list definition `x <- 1:10` and `y <- 10:1` respectively that currently exists as variables in the Global Environment. For `model.frame(f, data.frame(x=x,y=y)[1:3,])`, `x` and `y` are a cloned/overwritten version of the original objects limited by the first 3 rows. _
+
+##Exercise 4
+Expressions in formula’s: explain the difference you see from `model.frame(y~x+1)` and `model.frame(y~I(x+1))`
+
+```{r}
+model.frame(y~x+1)
+model.frame(y~I(x+1))
+```
+`model.frame(y~x+1)` `model.frame(y~I(x+1))`
+
+##Exercise 5
+Factors in formula’s. Define a factor, `f <- factor(c(rep("a",3)`, `rep("b", 3)`,`rep("c", 4)))`. Explain how it will work in a linear model, say `lm(y ~ x + f)`
+
+
+
+```{r}
+
+```
+##Exercise 6
+Model.matrix: explain the difference between `model.frame(y~x+f)` and `model.matrix(y~x+f)`
+
+
+```{r}
+
+```
+
+

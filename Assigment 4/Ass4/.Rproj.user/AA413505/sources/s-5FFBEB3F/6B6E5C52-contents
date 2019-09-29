@@ -1,0 +1,161 @@
+---
+title: "Spatial Data Analysis with R. Assignment 2"
+author: "Violeta Ana Luz Sosa León"
+date: "April 22, 2019"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: simplex
+    highlight: tango
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(ggplot2)
+```
+#Exercises for the meeting of April 26, 2019
+
+The reading material for this exercise is the second part of "Introduction to
+R" (ch 7-12), found from the R home page or https://cran.r-project.org/doc/manuals/r-release/R-intro.html
+
+Upload your answer to the LearnWeb assigned as a zip file with two files in
+it: (i) an R markdown file and (ii) an HTML file that resulted from knitting the
+R Markdown file. (If this is problematic, use PDF or something else.)
+
+##Exercise 1
+
+Create CSV file, read it and assign it to an object called test  
+
+```{r test, echo=TRUE, warning=FALSE}
+#Load the library for reading files
+library(readr)
+
+#Initial file path. All the path should be written down in case it is not contained in the working directory
+#test <- read_csv("Master/Europa/Clases Alemania/R/Scripts/programmingds/excersise 2/test.csv")
+
+#Case when uncompress the file is in the working directory
+test <- read_csv("test.csv")
+test
+
+#If is needed to create the CSV from R, along with a data.frame the code is:
+csvdata<-data.frame(width=c(10,12,11,13),lenght=c(15,27,20,22))
+write.csv(csvdata,'testData.csv')
+
+#CSV generated
+list.files(getwd(), pattern = "\\.csv$")
+
+```
+  
+##Exercise 2
+
+Create the same object using data.frame function
+```{r test3, echo=TRUE, warning=FALSE}
+test<-data.frame(width=c(10,12,11,13),lenght=c(15,27,20,22))
+
+test
+```
+
+##Exercise 3
+
+Carry out a linear regression of width (y) against length (x), and interpret the results
+
+```{r echo=TRUE, warning=FALSE}
+linear_regression <- lm(width ~ lenght, data = test)
+
+summary(linear_regression)
+```
+
+_By analyzing the summary results we have a low variance among the data, a low t-value indicates there is a low quantity of extreme values, the p-value is close to zero. Therefore a linear regression model can be considered explanatory for most of the observed data._  
+
+##Exercise 4
+
+Add a factor variable *f* to test, with levels _('a','a','b',"b")_ and, run a linear regression of width (y) against length and f(x), and interpret the results.
+
+```{r  echo=TRUE, warning=FALSE}
+test$f<-as.factor(c("a","a","b","b"))
+factor_linear_regression <- lm(width ~ lenght+f, data = test)
+
+summary(factor_linear_regression)
+```
+_Adding a new variable to the model helped to lower the extreme values and added 0.0091 more variations to the data. By analyzing other summary results, we have a low variance among the data. The new p-value is higher than before but close to zero. Therefore a linear regression model can be considered explanatory for most of the observed data. Furthermore, the change in the p-value has to be considered. Adding this variable did not help to explain better the model._  
+
+##Exercise 5
+
+Create a data vector with 500 random values, drawn from a _t_ distribution with 5 degrees of freedom (and zero non-centrality).
+
+```{r echo=TRUE, warning=FALSE}
+randomStud<-rt(n=500,df=5,ncp = 0)
+randomStud
+```
+
+##Exercise 6
+
+Plot this vector with *qqnorm*, add the reference line with *qqline* and interpret the resulting distribution in the context of the normal distribution.
+```{r  echo=TRUE, warning=FALSE}
+qqnorm(randomStud, main=paste("Normal QQ Plot for random t Students sample with ",5," df & n=",500), col="#3399CC", pch=20)
+qqline(randomStud,col="red")
+```
+
+_The plot displays the data along with the *qqline* indicating a low variation in general but also more extreme values than expected in the context of normal distribution at the extremities._
+
+##Exercise 7
+
+Write a function called plot t that combines these steps: it should accept two parameters, _n_ (with default value 500) and _df_ (with default value 5), and create the *qqnorm* plot with the added line. Demonstrate the function with default parameter values, and with parameter values 1000 and 10.
+
+```{r echo=TRUE, warning=FALSE}
+#Function definition
+plot_t<-function(n=500, df=5){
+  data<-rt(n,df,ncp = 0)
+  plot<-qqnorm(randomStud, main=paste("Normal QQ Plot for random t Students sample with ",df," df & n=",n),col="orange", pch=15)
+  qqline(randomStud,col="red", add=TRUE)
+}
+
+#Function demostration : default values
+plot_t()
+
+#Function demostration : values 1000 and 10
+plot_t(1000,10)
+```
+
+
+##Exercise 8
+Run this function, while trying to capture the output in a png file with size 800 pixels x 800 pixels.
+
+```{r echo=TRUE, warning=FALSE}
+#Create output file
+timeshoot=format(Sys.time(), "%y-%m-%d_%H.%M")
+png(paste("vsosa_fplot_",timeshoot, ".png", sep = ""), width = 800, height = 800)
+
+#Execute function to get the plot
+plot_t(1000,10)
+
+#Closing the output file
+dev.off()
+
+#Plot generated:
+list.files(getwd(), pattern = "\\.png$")
+```
+
+#References
+
+_Allaire, JJ, Yihui Xie, Jonathan McPherson, Javier Luraschi, Kevin Ushey, Aron Atkins, Hadley Wickham, Joe Cheng, Winston Chang, and Richard Iannone. 2019. Rmarkdown: Dynamic Documents for R._ https://rmarkdown.rstudio.com
+
+_R Documentation_ https://www.rdocumentation.org/
+
+_Robert I. Kabacoff. Quick R by DataCamp ._ https://www.statmethods.net/index.html
+
+_Yihui Xie, J. J. Allaire, Garrett Grolemund. 2019. R Markdown: The Definitive Guide._ https://bookdown.org/yihui/rmarkdown/
+
+_Zieffler Andrew. R Markdown Theme Gallery_ http://www.datadreaming.org/post/r-markdown-theme-gallery/
+
+
+

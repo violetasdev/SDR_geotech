@@ -1,0 +1,129 @@
+---
+title: "Spatial data science with R"
+author: "Violeta Sosa"
+date: "May 22 2019"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: simplex
+    highlight: tango
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercises for Meeting May 24 2019
+
+Work on the exercise for Data Cubes Exercises described in https://keen-swartz-3146c4.netlify.com/raster.html#exercises-2 
+
+## Exercise 1
+
+NDVI, normalized differenced vegetation index, is computed as `(NIR-R)/(NIR+R)`, with NIR the near infrared and R the red band. Read the `L7_ETMs.tif` file into object `x`, and distribute the band dimensions over attributes by `split(x, "band")`. Then, compute NDVI by using an expression that uses the NIR (band 4) and R (band 3) attributes directly.
+
+```{r warning=FALSE}
+tif = system.file("tif/L7_ETMs.tif", package = "stars")
+library(stars)
+library(sf)
+x = read_stars(tif)
+x
+plot(x)
+per_band=split(x, "band")
+
+ndvi_brazil <- (per_band[4,] - per_band[3,]) / (per_band[4,] + per_band[3,])
+plot(ndvi_brazil,col=colorRampPalette(c("red","yellow","green"))(50),main="NDVI for Brazil Imagery")
+
+```
+
+## Exercise 2
+
+Compute NDVI for the S2 image, using `st_apply` and an a function `ndvi = function(x) (x[4]-x[3])/(x[4]+x[3])`. Plot the result, and write the result to a GeoTIFF. Explain the difference in runtime between plotting and writing.
+
+```{r warning=FALSE}
+#WARNING!
+
+#The next file size is around 1GB. Uncomment the line if you DO NOT already have the file in your local machine!
+
+#install.packages("starsdata", repos = "http://pebesma.staff.ifgi.de", type = "source")
+
+granule = system.file("sentinel/S2A_MSIL1C_20180220T105051_N0206_R051_T32ULE_20180221T134037.zip", package = "starsdata")
+base_name = strsplit(basename(granule), ".zip")[[1]]
+s2 = paste0("SENTINEL2_L1C:/vsizip/", granule, "/", base_name, ".SAFE/MTD_MSIL1C.xml:10m:EPSG_32632")
+(p = read_stars(s2, proxy = TRUE))
+
+ndvi = function(x) (x[4]-x[3])/(x[4]+x[3])
+ndvi_s2<-st_apply(p, c("x", "y"), ndvi)
+plot(ndvi_s2, col=colorRampPalette(c("red","yellow","green"))(50),main="NDVI for Sentinel Imagery")
+
+start.time <- Sys.time()
+write_stars(p, "p2.tif")
+end.time <- Sys.time()
+time.takenG <- end.time - start.time
+time.takenG
+
+start.time <- Sys.time()
+plot(ndvi_s2, col=colorRampPalette(c("red","yellow","green"))(50),main="NDVI for Sentinel Imagery")
+end.time <- Sys.time()
+time.takenP <- end.time - start.time
+time.takenP
+
+```
+
+_The time for the GeoTIFF generation is ``r paste(time.takenG,units(time.takenG))`` and for the plot ``r paste(time.takenP,units(time.takenP))``. These differences are because of the pixel size and image resolution for the outputs. Meanwhile, the plot shows a basic result that renders according to zoom levels, the TIFF image (apart from all the metadata stored?) contains the complete resolution values for the image._
+
+## Exercise 3
+
+Use `st_transform` to transform the `stars` object read from `L7_ETMs.tiff` to EPSG 4326. Print the object. Is this a regular grid? Plot the first band using arguments `axes=TRUE` and `borders=NA`, and explain why this takes such a long time.
+
+```{r warning=FALSE}
+l7_transform<-st_transform(x,crs =4326)
+l7_transform
+```
+
+_It is not a regular grid. It is a curvilinear grid. _
+
+```{r warning=FALSE}
+start.time <- Sys.time()
+#If you leave the word "borders"" as per the exercise asks for, you will get every pixel contored by a black polygon. Cool to know! 
+plot(l7_transform[,,,1],axes=TRUE,border=NA)
+end.time <- Sys.time()
+time.takenL7 <- end.time - start.time
+time.takenL7
+
+```
+
+_The computing time for this occasion is ``r paste(time.takenL7,units(time.takenL7))``. It takes much time because of the computation of the values for each pixel to render it properly in a lower resolution by scaling the result to fit the user screen. First time running the exercise in local machine took **2 minutes**, the second time around 15 seconds, this may be due to the cache store in the workspace._
+
+## Exercise 4
+
+Use `st_warp` to warp the `L7_ETMs.tif` object to EPSG 4326, and plot the resulting object with `axes=TRUE`. Why is the plot created much faster than after `st_transform`?
+
+```{r warning=FALSE}
+
+warp_trans<-st_warp(x,crs=4326)
+plot(warp_trans[,,,1],axes=TRUE,borders=NA)
+
+start.time <- Sys.time()
+plot(warp_trans[,,,1],axes=TRUE,borders=NA)
+end.time <- Sys.time()
+time.takenwarp <- end.time - start.time
+time.takenwarp
+```
+
+
+*This plot is much faster, it only took ``r paste(time.takenwarp,units(time.takenwarp))``. This is because the `st_transform` function leads to `lossless transformation`[3]. It keeps the image data integration: **For gridded spatial data, a curvilinear grid with a transformed grid cell (centers) is returned** [3]. In the other hand, `st_wraps` converts the object into a regular grid in the new CRS. The `st_wraps` function implies a **resampling is done over the image, causing the loss of data that can not be reversed**[3].*
+
+
+## References
+
+[[1] Spatial Data Science.Edzer Pebesma, Roger Bivand](https://keen-swartz-3146c4.netlify.com/raster.html)
+
+[[2] R Spatial: Plotting and subsetting stars objects](https://www.r-spatial.org/r/2018/03/22/stars2.html)
+
+[[3] R Stars Library Documentation](https://r-spatial.github.io/stars/reference/st_transform.html)
