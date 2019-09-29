@@ -1,7 +1,0 @@
-"0","scoreSimMa <- data.matrix(read_csv(system.file(""extdata/scores2.csv"", package = ""sstr"")))
-"
-"2","Parsed with column specification:
-cols(
-  `0` = [32mcol_double()[39m
-)
-"

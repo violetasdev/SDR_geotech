@@ -1,0 +1,388 @@
+---
+title: "Spectral Solution for Matching Graphs: An R implementation"
+author: "Violeta Ana Luz Sosa Leon"
+date: "August 9, 2019"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{my-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The library _sstr (Spectral Solution Technique in R)_ is meant to help to find the better candidate pairs for a two graph matching.For doing so, the Spectral Solution Technique is implemented by using an already calculated similarity matrix and the scores, which are defined with the Pagerank algorithm by Google. In this particular case, we use a sketch map versus a metric map similarity matrix from the its4land Project [1].
+
+
+## Contents
+
+* [1. Introduction and Motivation](#sec1)
+* [2. Data description](#sec2)
+* [3. Exploration](#sec3)
+* [4. Analysis](#sec4)
+* [5. Discussion of results](#sec5)
+* [6. Final notes](#sec6)
+
+
+## Introduction and Motivation {#sec1}
+
+Translating spatial elements from human activities is a research interest that has been taking place in recent years in the spatial semantics science [2] . This interest helps to understand how humans conceive space and how this can be used to identify improving different services and human communication in geospatial information systems. One of the sources of information is _Sketch Maps_ [3], as a natural form to illustrate the physical information surrounding us, through drawings. As different users can interpret the location of features in different ways, their relations and distribution in the scene, it is necessary to automate the process of identifying the meaning behind the drawn figures from one formal and everyday recreation of space. 
+
+To accurate relate maps drawing by hand and cartographic maps, techniques for assessing qualitative map alignment have been applied to find matches among the input representation, in this case, a sketched entity, and one or several entities in a metric map using Local _Compatibility Matrices_ (LCM) [4]. LCM algorithm aims to face challenges like narrow features nature and long execution times. However, the metaheuristics generated in Chipofya’s algorithm gave better performance and accuracy versus standard 0-1 compatibility matrices, this can be refined during the iterative match-candidates selection process. 
+
+Diverse techniques for matching a variety of features including as per our interest multi-polygons, have been developed in computer science [5], especially in the computer vision field, and have arisen research interest in object recognition. Leordeanu and Hebert at 2005 [6], in their _Spectral Solution Technique_ (SST), focus on finding secure correspondences between a couple of set of features, and the result is a collection of highly linked assignments represented by a matrix _M_, picturing the adjacency values of these objects. 
+
+Based on the previous literature, this research aims to improve the selection process performance in _LCM_ for map aligning in _Sketch Maps_. For doing so, the selection of the most competent candidates versus a particular pair match is by using the link scores between the input object (_sketched map_) and the output map (_metric map_). This study then, includes the advantage of _LCM_ criteria selection and _SST_ feature scoring as these two methodologies complement each other. 
+
+As a first approximation, this project is an initial analysis of the algorithm performance and behavior by the code implementation in R and Python meant to give insights regarding the structure and implementation of the studied *_Spectral Solution Technique_* for the calculation of the *_Affinity scores_*. The results add insights about the space complexity of the functionalities and the data structures applied in order to improve the proposed approach. 
+
+## Data description  {#sec2}
+
+### Similarity matrix
+
+The similarity matrix is obtained from the LCM algorithm developed in the its4land project [1]. It takes as input a sketch map graph and a metric map, identify the features on each one of them, assign the relationships labelling according to different _calculi methods_ suchas _RCC8_, and finally as an output the Similarity Matrix according to compatibility rules is delivered. The sample of the compatibility matrix can be found at:
+
+```{r echo=TRUE}
+library(readr)
+dataset <- data.matrix(read.csv(system.file("extdata/foo.csv", package = "sstr")))
+```
+
+For the current analysis, a sketch map of size 41 (number of features) is used. The final size of the similarity matrix is
+
+```{r echo=TRUE}
+dim(dataset)
+```
+
+
+### Scores by PageRank Algorithm
+
+As the SST addresses the use of maximum eigenvalue, an algorithm that pursues the identification of links between large amounts of objects connected is needed, as per Leordeanu thesis. The most known approach is Google’s algorithm, Pagerank, which calculates a feature relevance inside a network according to the number of links shared with other features [6]. 
+
+A version of the Pagerank function library exists in the igraph library [9]. A raw implementation of the Pagerank algorithm is assessed for exploration purposes and it is coded in the library SST, although it is not used.
+
+A sample with the scores already calculated from the its4land project [1] is also provided in the package:
+
+```{r echo=TRUE}
+library(readr)
+scoreSimMa <- data.matrix(read_csv(system.file("extdata/scores2.csv", package = "sstr")))
+```
+
+The dimmesion of the similarity matrix scores is:
+
+```{r echo=TRUE}
+dim(scoreSimMa)
+```
+
+
+## Exploration  {#sec3}
+
+A single function called _simat_ will return a _sstr_ class object with the highest affinity scores from pairs features stored in the _Similarity Matrix_ and the corresponding _Affinity Scores_.
+
+### Step Wise description
+
+First of all, once the similarity matrix is stored, it is followed by the definition of the working variables _L_ as the number of nodes, _x_ as the elements of the row in the iteration and _x\*_ the maximum eigenvalue, or affinity scores, calculated next for the _Similarity Matrix M_. The following UML diagram describes the process:
+
+![Unified Modeling Language (UML) diagram for the Spectral Solution Technique algorithm](images/sst_algorithm.png){width=250px}
+
+
+#### Execution time
+
+##### start
+Returns the system time in which the execution of the affinity analysis started.
+```{r echo=TRUE}
+start<-function(){
+  start.time <- Sys.time()
+  return(start.time)
+}
+```
+
+##### end
+Calculates the total system time in which the execution of the affinity analysis was done and returns a difftime class object
+```{r echo=TRUE}
+end<-function(sttime){
+  end.time <- Sys.time()
+  time.takenG <- end.time - sttime
+  return(time.takenG)
+}
+```
+
+#### Storage variables definition
+
+The definition of L and X can be followed with the functions _construct_l_ and _construct_x_. The algorithm will reject all the objects in the iteration with a lower value and a corresponding label in conflict with _x*_ and collect the high scored and compatibles ones as long there are features left to analyze in _L_. 
+
+```{r echo=TRUE}
+#Create L as the number of nodes
+construct_l<-function(sm_sparse){
+  return(matrix(1,nrow=nrow(sm_sparse),ncol = ncol(sm_sparse)))
+}
+
+#Create X as the assigments with maximun confidence value
+construct_x<-function(sm_sparse){
+  return(matrix(0,nrow=nrow(sm_sparse),ncol = ncol(sm_sparse)))
+}
+```
+
+Additional functionalities are created to encapsulate the workflow: 
+
+#### Calculate Metric Map Size
+
+Based on the sparsed matrix for the similarity matrix and the size of the input graph (sketch map) the estimated metric map size is calculated:
+
+```{r echo=TRUE}
+metricm_size<-function(sm_sparse,sketch_map_size){
+  m_map_size=(nrow(sm_sparse)/sketch_map_size)
+  return(m_map_size)
+}
+```
+
+#### Fetch highest affinity values
+
+In order to do the comparison of highest scores, a function to return the max score index is created:
+
+```{r echo=TRUE}
+maxScoreIndx<-function(scorematrix){
+  maxScore=max(scorematrix)
+  maxind=(which(scorematrix == maxScore, arr.ind = TRUE))[1][1]
+  return(maxind)
+}
+```
+
+Finally, _x_ will contain the pairs candidates with the highest confidence of being a correct assignment. This is implemented in the main function:
+
+```{r echo=TRUE}
+
+library(SparseM)
+library('Matrix')
+
+simat<-function(path,sketch_map_size,scoressm){
+
+  #create storage lists
+  sm_feat_list = c()
+  mm_feat_list = c()
+
+  start_time=start()
+
+  #Sparse the Matrix by row
+  sm_sparse=as.matrix.csr(path)
+  metric_map_size=metricm_size(sm_sparse,sketch_map_size)
+  #Main analysis objects
+  L=construct_l(sm_sparse)
+  X=construct_x(sm_sparse)
+
+  #Fetch the compatible ones
+  while(max(scoressm)>0 & nnzero(L)!=0){
+
+    maxind=maxScoreIndx(scoressm)
+
+    sm_feat_id=round((maxind/metric_map_size),0)
+    sm_feat_list=append(sm_feat_list,sm_feat_id)
+
+    mm_feat_id=maxind%%metric_map_size
+    mm_feat_list=append(mm_feat_list,mm_feat_id)
+
+    scoressm[maxind,]=-1
+    L[maxind,]=0
+
+    for (i in seq(0,ncol(sm_sparse), by=1)){
+      if(round(i/metric_map_size,0)==sm_feat_id){
+        L[i,]=0
+        scoressm[i,]=-1
+      }
+
+      if(i%%metric_map_size==mm_feat_id){
+        L[i,]=0
+        scoressm[i,]=-1
+      }
+    }
+
+    X[maxind,]=1
+  }
+
+  #results<-r_sstr(sketch_map_indexes=sm_feat_list, metric_map_indexes=mm_feat_list, time=end(start_time))
+
+  results<-constructClass(smi=sm_feat_list,mmi=mm_feat_list,t=end(start_time))
+  return(results)
+}
+```
+### Page Rank funtion implementation
+
+From the _igraph_ library the function _page_rank_ will be used. The function takes as argument the Similarity Matrix (in this case a sparsed matrix in order to improve the preformance) and the algorithm criteria based on Google's Page Rank algorithm: number of iteration, alpha as the damping parameter (the probability at each node to be changed as per Page observations [6]) and the tolerance used to check convergence in power method solver (this means, avoid the reduction of the initial matrix during the iteration process [8]).
+
+```{r echo=TRUE}
+library(igraph)
+
+pr_scores<-function(simMatrix){
+
+  sparseMatrix<-as(simMatrix,"sparseMatrix")
+
+  g<-graph_from_adjacency_matrix(sparseMatrix, mode = "directed")
+  prr<-page_rank(g)$vector
+  scoresSimMa2=matrix(prr,nrow=length(prr))
+
+  return(scoresSimMa2)
+}
+
+```
+
+<!-- ### Page Rank funtion implementation -->
+
+<!-- The function takes as argument the Similarity Matrix and the algorithm criteria based on its4land[1] and NetworkX [7] implementation: number of iteration, alpha as the damping parameter (the probability at each node to be changed as per Page observations [6]) and the tolerance used to check convergence in power method solver (this means, avoid the reduction of the initial matrix during the iteration process [8]): -->
+
+<!-- The function is structured as follows: -->
+
+<!-- ```{r echo=TRUE} -->
+<!-- library(SparseM) -->
+<!-- library(readr) -->
+<!-- library('Matrix') -->
+<!-- library(textTinyR) -->
+
+<!-- alpha=0.85 -->
+<!-- max_iter=200 -->
+<!-- tol=1e-10 -->
+<!-- ``` -->
+
+
+<!-- As the compatibility matrix has a considerable size, it is needed to Sparse the Matrix to optimize the execution -->
+
+<!-- ```{r echo=TRUE} -->
+
+<!-- #Argument setting -->
+<!-- X<- data.matrix(read_csv(system.file("extdata/foo.csv", package = "sstr"))) -->
+<!-- #Number of pairs -->
+<!-- n=ncol(X) -->
+<!-- #With compression, index zero values for saving memory -->
+<!-- sparseMX<-as(X,"sparseMatrix") -->
+<!-- #specific method to sumarize sparse matrices -->
+<!-- sumRowS<-sparse_Sums(sparseMX, rowSums = TRUE) -->
+
+<!-- #Substracting the nonzero Rows -->
+<!-- nozero=which(sumRowS!=0) -->
+<!-- ``` -->
+
+<!-- Next, it is necessary to normalize the graph. Our initial guess is that every feature has a score of 1, -->
+
+<!-- ```{r echo=TRUE} -->
+<!--  for(i in nozero){ -->
+<!--     (sparseMX[i:i+1,]=sparseMX[i:i+1,]*(1/sumRowS[i])) -->
+<!--     sr=sparse_Sums(sparseMX, rowSums = TRUE) -->
+<!--     dangle<-ifelse(sr==0,1.0/n,0) -->
+<!--   } -->
+
+<!--   initial_guess=1/n -->
+<!--   scores= matrix(1,nrow=n)/n -->
+<!--   dangleM=matrix(dangle,nrow = n) -->
+<!-- ``` -->
+
+<!-- Finally, the process to identify the links scores is made by reviewing the features according to the iterations wanted and checking the convergence tolerance -->
+
+
+<!-- ```{r echo=TRUE} -->
+<!-- for (k in seq(1,max_iter, by=1)){ -->
+<!--     print(i) -->
+<!--     prev_scores = scores -->
+<!--     print (prev_scores) -->
+<!--     #Here we have the detail, we are calling the sparseMatrix data nxn -->
+<!--     #We need all to be numeric -->
+<!--     scores=(alpha*((scores[,])*sparseMX@x+(t(dangleM)%*%(prev_scores)))+(1-alpha)*sum(prev_scores)/n) -->
+
+<!--     scores_max =max(abs(scores)) -->
+
+<!--     if (scores_max == 0.0){ -->
+<!--       scores_max = 1.0 -->
+<!--     } -->
+
+<!--     err = abs(max(matrix(scores)  - as.vector(prev_scores))) / scores_max -->
+<!--     if (err < n * tol){ -->
+<!--       (scores) -->
+<!--     } -->
+<!--   } -->
+
+<!-- ``` -->
+
+
+### Execution
+
+Finally, to acomplish the goal of initial structure analysis, the Spectral Solution Technique is executed by using an already calculated similarity matrix and the Pagerank scores. In order to use the main function, the arguments for the analysis should be handed. For the current analysis, a Sketch Map with 41 features and the corresponding Similarity Matrix and Scores are set as input:
+
+```{r setup}
+library(sstr)
+```
+
+In this case, from the package the Similarity Matrix and the Scores are recovered
+
+```{r  echo=TRUE}
+library(readr)
+# From the datasample
+dataset <- data.matrix(read.csv(system.file("extdata/foo.csv", package = "sstr")))
+scoreSimMa <- data.matrix(read_csv(system.file("extdata/scores2.csv", package = "sstr")))
+
+# From the function code
+scorePR<-pr_scores(dataset)
+```
+
+Next, it is needed to define the size of the first input graph:
+
+```{r  echo=TRUE}
+smap_size=41
+```
+
+With these, is possible to call the main function, _simat_:
+
+```{r  echo=TRUE}
+#?simat
+
+# Data Sample
+(result_object_sstr<-simat(path=dataset,sketch_map_size=smap_size,scoressm=scoreSimMa))
+
+# Page Rank Code
+(result_object_sstr2<-simat(path=dataset,sketch_map_size=smap_size,scoressm=scorePR))
+
+```
+
+## 4. Analysis  {#sec4}
+
+The output is a _sstr_ class object containing the pair of features with the highest affinity score for the input A (sketch_map), input B (metric_map) and the execution time.
+
+It is important to hand the execution time in order to see the discrepances between different levels of complexity for similarity matrices. The user will be able to calculate the most likely matches for two input graphs for _n_ fetures in the input A graph.
+
+In Python, the computing time for the scores was _0.039893s_, and from the Similarity Matrix, a total of _41_ pairs from the Sketch Map and *41* from the Metric map were returned from the algorithm implementation. On the other side, the R code took _``r paste(result_object_sstr$time)``s_, and one additional pair was derived for both the Sketch Map and the Metric Map, for a total of *42* pairs each. For the Sketch Map, both algorithms have *98%* of similar results whereas for the Metric Map the have only *51%* of similar results. 
+
+## 5. Discussion of results {#sec5}
+
+By using the same input for the _Page Rank scores_ and the _Similarity matrix_, it was expected to have similar results. This statement was valid only for the _Sketch Map_ features. For the _Metric Map_, the differences in the result maybe because of the implementation of a different but analogous function that extracts the maximum score (calculated eigenvalue for the specific set of features). The _nlargest_ function from Python behaves differently from the _max function_ in R even though both concepts are meant to extract the highest value. Furthermore, the fact that the vectorization process in R for sparse matrices indicates that it is necessary to analyze the influence of the scores over the space complexity algorithms execution.
+
+Additionally, to the output differences, as the data structure is managed differently, the computing time for each one of the iteration increases.
+
+## 6. Final notes {#sec6}
+
+For the current package, the only observation returned from the _Check Package_ process is regarding the size of the example data as it is larger than 10 Mb. As the similarity matrixes are as big as the possible combinations, the code handled this situation with the first attempt of Pagerank by using the _SparseMatrices_. Different libraries are available for creating Sparse Matrices, and the returned structures may differ, making further implementations processes space complexity variable.
+
+## References
+
+[1] Chipofya, M.,  Jan, S., Schultz C., Schwering, A. (2017). Towards Smart Sketch Maps for Community-driven Land Tenure Recording Activities. AGILE Conference. 
+
+[2] Schwering, A. (2008). Approaches to Semantic Similarity Measurement for Geo-Spatial Data: A Survey. Transactions in GIS, 12(1), 5–29.
+
+[3] Chipofya, M., Schwering, A. & Binor, T. (2013). Matching Qualitative Spatial Scene Descriptions á la Tabu.
+
+[4] Chipofya, M., Schultz, C. & Schwering, A. (2016). A metaheuristic approach for efficient and effective sketch-to-metric map alignment. International Journal of Geographical Information Science, 30:2, 405-425.
+
+[5] Bunke H., Jiang X (2000). Graph Matching and Similarity. In: Teodorescu HN., Mlynek D., Kandel A., Zimmermann HJ. (eds) Intelligent Systems and Interfaces. International Series in Intelligent Technologies, vol 15. Springer, Boston, MA.
+
+[6] Leordeanu, M., & Hebert, M. (2005). A spectral technique for correspondence problems using pairwise constraints. Tenth IEEE International Conference on Computer Vision (ICCV’05) Volume 1.
+
+[7] Page, L., Brin, S., Motwani, R., & Winograd, T. (1999). The PageRank Citation Ranking: Bringing Order to the Web. 
+
+[[8] R Documentation](https://www.rdocumentation.org/)
+
+[[9] iGrahp for R](https://igraph.org/r/doc/page_rank.html) 

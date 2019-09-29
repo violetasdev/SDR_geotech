@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Violeta Ana Luz Sosa Leon" />
+
+<meta name="date" content="2019-08-09" />
+
+<title>Spectral Solution for Matching Graphs: An R implementation</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Spectral Solution for Matching Graphs: An R implementation</h1>
+<h4 class="author">Violeta Ana Luz Sosa Leon</h4>
+<h4 class="date">August 9, 2019</h4>
+
+
+
+<style>
+body {
+text-align: justify}
+</style>
+<p>The library <em>sstr (Spectral Solution Technique in R)</em> is meant to help to find the better candidate pairs for a two graph matching.For doing so, the Spectral Solution Technique is implemented by using an already calculated similarity matrix and the scores, which are defined with the Pagerank algorithm by Google. In this particular case, we use a sketch map versus a metric map similarity matrix from the its4land Project [1].</p>
+<div id="contents" class="section level2">
+<h2>Contents</h2>
+<ul>
+<li><a href="#sec1">1. Introduction and Motivation</a></li>
+<li><a href="#sec2">2. Data description</a></li>
+<li><a href="#sec3">3. Exploration</a></li>
+<li><a href="#sec4">4. Analysis</a></li>
+<li><a href="#sec5">5. Discussion of results</a></li>
+<li><a href="#sec6">6. Final notes</a></li>
+</ul>
+</div>
+<div id="sec1" class="section level2">
+<h2>Introduction and Motivation</h2>
+<p>Translating spatial elements from human activities is a research interest that has been taking place in recent years in the spatial semantics science [2] . This interest helps to understand how humans conceive space and how this can be used to identify improving different services and human communication in geospatial information systems. One of the sources of information is <em>Sketch Maps</em> [3], as a natural form to illustrate the physical information surrounding us, through drawings. As different users can interpret the location of features in different ways, their relations and distribution in the scene, it is necessary to automate the process of identifying the meaning behind the drawn figures from one formal and everyday recreation of space.</p>
+<p>To accurate relate maps drawing by hand and cartographic maps, techniques for assessing qualitative map alignment have been applied to find matches among the input representation, in this case, a sketched entity, and one or several entities in a metric map using Local <em>Compatibility Matrices</em> (LCM) [4]. LCM algorithm aims to face challenges like narrow features nature and long execution times. However, the metaheuristics generated in Chipofya’s algorithm gave better performance and accuracy versus standard 0-1 compatibility matrices, this can be refined during the iterative match-candidates selection process.</p>
+<p>Diverse techniques for matching a variety of features including as per our interest multi-polygons, have been developed in computer science [5], especially in the computer vision field, and have arisen research interest in object recognition. Leordeanu and Hebert at 2005 [6], in their <em>Spectral Solution Technique</em> (SST), focus on finding secure correspondences between a couple of set of features, and the result is a collection of highly linked assignments represented by a matrix <em>M</em>, picturing the adjacency values of these objects.</p>
+<p>Based on the previous literature, this research aims to improve the selection process performance in <em>LCM</em> for map aligning in <em>Sketch Maps</em>. For doing so, the selection of the most competent candidates versus a particular pair match is by using the link scores between the input object (<em>sketched map</em>) and the output map (<em>metric map</em>). This study then, includes the advantage of <em>LCM</em> criteria selection and <em>SST</em> feature scoring as these two methodologies complement each other.</p>
+<p>As a first approximation, this project is an initial analysis of the algorithm performance and behavior by the code implementation in R and Python meant to give insights regarding the structure and implementation of the studied <em><em>Spectral Solution Technique</em></em> for the calculation of the <em><em>Affinity scores</em></em>. The results add insights about the space complexity of the functionalities and the data structures applied in order to improve the proposed approach.</p>
+</div>
+<div id="sec2" class="section level2">
+<h2>Data description</h2>
+<div id="similarity-matrix" class="section level3">
+<h3>Similarity matrix</h3>
+<p>The similarity matrix is obtained from the LCM algorithm developed in the its4land project [1]. It takes as input a sketch map graph and a metric map, identify the features on each one of them, assign the relationships labelling according to different <em>calculi methods</em> suchas <em>RCC8</em>, and finally as an output the Similarity Matrix according to compatibility rules is delivered. The sample of the compatibility matrix can be found at:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(readr)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="co">#&gt; Warning: package &#39;readr&#39; was built under R version 3.5.2</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a>dataset &lt;-<span class="st"> </span><span class="kw">data.matrix</span>(<span class="kw">read.csv</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata/foo.csv&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;sstr&quot;</span>)))</span></code></pre></div>
+<p>For the current analysis, a sketch map of size 41 (number of features) is used. The final size of the similarity matrix is</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">dim</span>(dataset)</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="co">#&gt; [1] 4633 4633</span></span></code></pre></div>
+</div>
+<div id="scores-by-pagerank-algorithm" class="section level3">
+<h3>Scores by PageRank Algorithm</h3>
+<p>As the SST addresses the use of maximum eigenvalue, an algorithm that pursues the identification of links between large amounts of objects connected is needed, as per Leordeanu thesis. The most known approach is Google’s algorithm, Pagerank, which calculates a feature relevance inside a network according to the number of links shared with other features [6].</p>
+<p>A version of the Pagerank function library exists in the igraph library [9]. A raw implementation of the Pagerank algorithm is assessed for exploration purposes and it is coded in the library SST, although it is not used.</p>
+<p>A sample with the scores already calculated from the its4land project [1] is also provided in the package:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">library</span>(readr)</span>
+<span id="cb3-2"><a href="#cb3-2"></a>scoreSimMa &lt;-<span class="st"> </span><span class="kw">data.matrix</span>(<span class="kw">read_csv</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata/scores2.csv&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;sstr&quot;</span>)))</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co">#&gt; Parsed with column specification:</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="co">#&gt; cols(</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="co">#&gt;   `0` = col_double()</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="co">#&gt; )</span></span></code></pre></div>
+<p>The dimmesion of the similarity matrix scores is:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">dim</span>(scoreSimMa)</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="co">#&gt; [1] 4633    1</span></span></code></pre></div>
+</div>
+</div>
+<div id="sec3" class="section level2">
+<h2>Exploration</h2>
+<p>A single function called <em>simat</em> will return a <em>sstr</em> class object with the highest affinity scores from pairs features stored in the <em>Similarity Matrix</em> and the corresponding <em>Affinity Scores</em>.</p>
+<div id="step-wise-description" class="section level3">
+<h3>Step Wise description</h3>
+<p>First of all, once the similarity matrix is stored, it is followed by the definition of the working variables <em>L</em> as the number of nodes, <em>x</em> as the elements of the row in the iteration and <em>x*</em> the maximum eigenvalue, or affinity scores, calculated next for the <em>Similarity Matrix M</em>. The following UML diagram describes the process:</p>
+<div class="figure">
+<img src="data:image/png;base64,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" width="250" alt />
+<p class="caption">Unified Modeling Language (UML) diagram for the Spectral Solution Technique algorithm</p>
+</div>
+<div id="execution-time" class="section level4">
+<h4>Execution time</h4>
+<div id="start" class="section level5">
+<h5>start</h5>
+<p>Returns the system time in which the execution of the affinity analysis started.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>start&lt;-<span class="cf">function</span>(){</span>
+<span id="cb5-2"><a href="#cb5-2"></a>  start.time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</span>
+<span id="cb5-3"><a href="#cb5-3"></a>  <span class="kw">return</span>(start.time)</span>
+<span id="cb5-4"><a href="#cb5-4"></a>}</span></code></pre></div>
+</div>
+<div id="end" class="section level5">
+<h5>end</h5>
+<p>Calculates the total system time in which the execution of the affinity analysis was done and returns a difftime class object</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>end&lt;-<span class="cf">function</span>(sttime){</span>
+<span id="cb6-2"><a href="#cb6-2"></a>  end.time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</span>
+<span id="cb6-3"><a href="#cb6-3"></a>  time.takenG &lt;-<span class="st"> </span>end.time <span class="op">-</span><span class="st"> </span>sttime</span>
+<span id="cb6-4"><a href="#cb6-4"></a>  <span class="kw">return</span>(time.takenG)</span>
+<span id="cb6-5"><a href="#cb6-5"></a>}</span></code></pre></div>
+</div>
+</div>
+<div id="storage-variables-definition" class="section level4">
+<h4>Storage variables definition</h4>
+<p>The definition of L and X can be followed with the functions <em>construct_l</em> and <em>construct_x</em>. The algorithm will reject all the objects in the iteration with a lower value and a corresponding label in conflict with _x*_ and collect the high scored and compatibles ones as long there are features left to analyze in <em>L</em>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co">#Create L as the number of nodes</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a>construct_l&lt;-<span class="cf">function</span>(sm_sparse){</span>
+<span id="cb7-3"><a href="#cb7-3"></a>  <span class="kw">return</span>(<span class="kw">matrix</span>(<span class="dv">1</span>,<span class="dt">nrow=</span><span class="kw">nrow</span>(sm_sparse),<span class="dt">ncol =</span> <span class="kw">ncol</span>(sm_sparse)))</span>
+<span id="cb7-4"><a href="#cb7-4"></a>}</span>
+<span id="cb7-5"><a href="#cb7-5"></a></span>
+<span id="cb7-6"><a href="#cb7-6"></a><span class="co">#Create X as the assigments with maximun confidence value</span></span>
+<span id="cb7-7"><a href="#cb7-7"></a>construct_x&lt;-<span class="cf">function</span>(sm_sparse){</span>
+<span id="cb7-8"><a href="#cb7-8"></a>  <span class="kw">return</span>(<span class="kw">matrix</span>(<span class="dv">0</span>,<span class="dt">nrow=</span><span class="kw">nrow</span>(sm_sparse),<span class="dt">ncol =</span> <span class="kw">ncol</span>(sm_sparse)))</span>
+<span id="cb7-9"><a href="#cb7-9"></a>}</span></code></pre></div>
+<p>Additional functionalities are created to encapsulate the workflow:</p>
+</div>
+<div id="calculate-metric-map-size" class="section level4">
+<h4>Calculate Metric Map Size</h4>
+<p>Based on the sparsed matrix for the similarity matrix and the size of the input graph (sketch map) the estimated metric map size is calculated:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>metricm_size&lt;-<span class="cf">function</span>(sm_sparse,sketch_map_size){</span>
+<span id="cb8-2"><a href="#cb8-2"></a>  m_map_size=(<span class="kw">nrow</span>(sm_sparse)<span class="op">/</span>sketch_map_size)</span>
+<span id="cb8-3"><a href="#cb8-3"></a>  <span class="kw">return</span>(m_map_size)</span>
+<span id="cb8-4"><a href="#cb8-4"></a>}</span></code></pre></div>
+</div>
+<div id="fetch-highest-affinity-values" class="section level4">
+<h4>Fetch highest affinity values</h4>
+<p>In order to do the comparison of highest scores, a function to return the max score index is created:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>maxScoreIndx&lt;-<span class="cf">function</span>(scorematrix){</span>
+<span id="cb9-2"><a href="#cb9-2"></a>  maxScore=<span class="kw">max</span>(scorematrix)</span>
+<span id="cb9-3"><a href="#cb9-3"></a>  maxind=(<span class="kw">which</span>(scorematrix <span class="op">==</span><span class="st"> </span>maxScore, <span class="dt">arr.ind =</span> <span class="ot">TRUE</span>))[<span class="dv">1</span>][<span class="dv">1</span>]</span>
+<span id="cb9-4"><a href="#cb9-4"></a>  <span class="kw">return</span>(maxind)</span>
+<span id="cb9-5"><a href="#cb9-5"></a>}</span></code></pre></div>
+<p>Finally, <em>x</em> will contain the pairs candidates with the highest confidence of being a correct assignment. This is implemented in the main function:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="kw">library</span>(SparseM)</span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="co">#&gt; Warning: package &#39;SparseM&#39; was built under R version 3.5.2</span></span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="co">#&gt; </span></span>
+<span id="cb10-5"><a href="#cb10-5"></a><span class="co">#&gt; Attaching package: &#39;SparseM&#39;</span></span>
+<span id="cb10-6"><a href="#cb10-6"></a><span class="co">#&gt; The following object is masked from &#39;package:base&#39;:</span></span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="co">#&gt; </span></span>
+<span id="cb10-8"><a href="#cb10-8"></a><span class="co">#&gt;     backsolve</span></span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="kw">library</span>(<span class="st">&#39;Matrix&#39;</span>)</span>
+<span id="cb10-10"><a href="#cb10-10"></a><span class="co">#&gt; Warning: package &#39;Matrix&#39; was built under R version 3.5.3</span></span>
+<span id="cb10-11"><a href="#cb10-11"></a></span>
+<span id="cb10-12"><a href="#cb10-12"></a>simat&lt;-<span class="cf">function</span>(path,sketch_map_size,scoressm){</span>
+<span id="cb10-13"><a href="#cb10-13"></a></span>
+<span id="cb10-14"><a href="#cb10-14"></a>  <span class="co">#create storage lists</span></span>
+<span id="cb10-15"><a href="#cb10-15"></a>  sm_feat_list =<span class="st"> </span><span class="kw">c</span>()</span>
+<span id="cb10-16"><a href="#cb10-16"></a>  mm_feat_list =<span class="st"> </span><span class="kw">c</span>()</span>
+<span id="cb10-17"><a href="#cb10-17"></a></span>
+<span id="cb10-18"><a href="#cb10-18"></a>  start_time=<span class="kw">start</span>()</span>
+<span id="cb10-19"><a href="#cb10-19"></a></span>
+<span id="cb10-20"><a href="#cb10-20"></a>  <span class="co">#Sparse the Matrix by row</span></span>
+<span id="cb10-21"><a href="#cb10-21"></a>  sm_sparse=<span class="kw">as.matrix.csr</span>(path)</span>
+<span id="cb10-22"><a href="#cb10-22"></a>  metric_map_size=<span class="kw">metricm_size</span>(sm_sparse,sketch_map_size)</span>
+<span id="cb10-23"><a href="#cb10-23"></a>  <span class="co">#Main analysis objects</span></span>
+<span id="cb10-24"><a href="#cb10-24"></a>  L=<span class="kw">construct_l</span>(sm_sparse)</span>
+<span id="cb10-25"><a href="#cb10-25"></a>  X=<span class="kw">construct_x</span>(sm_sparse)</span>
+<span id="cb10-26"><a href="#cb10-26"></a></span>
+<span id="cb10-27"><a href="#cb10-27"></a>  <span class="co">#Fetch the compatible ones</span></span>
+<span id="cb10-28"><a href="#cb10-28"></a>  <span class="cf">while</span>(<span class="kw">max</span>(scoressm)<span class="op">&gt;</span><span class="dv">0</span> <span class="op">&amp;</span><span class="st"> </span><span class="kw">nnzero</span>(L)<span class="op">!=</span><span class="dv">0</span>){</span>
+<span id="cb10-29"><a href="#cb10-29"></a></span>
+<span id="cb10-30"><a href="#cb10-30"></a>    maxind=<span class="kw">maxScoreIndx</span>(scoressm)</span>
+<span id="cb10-31"><a href="#cb10-31"></a></span>
+<span id="cb10-32"><a href="#cb10-32"></a>    sm_feat_id=<span class="kw">round</span>((maxind<span class="op">/</span>metric_map_size),<span class="dv">0</span>)</span>
+<span id="cb10-33"><a href="#cb10-33"></a>    sm_feat_list=<span class="kw">append</span>(sm_feat_list,sm_feat_id)</span>
+<span id="cb10-34"><a href="#cb10-34"></a></span>
+<span id="cb10-35"><a href="#cb10-35"></a>    mm_feat_id=maxind<span class="op">%%</span>metric_map_size</span>
+<span id="cb10-36"><a href="#cb10-36"></a>    mm_feat_list=<span class="kw">append</span>(mm_feat_list,mm_feat_id)</span>
+<span id="cb10-37"><a href="#cb10-37"></a></span>
+<span id="cb10-38"><a href="#cb10-38"></a>    scoressm[maxind,]=<span class="op">-</span><span class="dv">1</span></span>
+<span id="cb10-39"><a href="#cb10-39"></a>    L[maxind,]=<span class="dv">0</span></span>
+<span id="cb10-40"><a href="#cb10-40"></a></span>
+<span id="cb10-41"><a href="#cb10-41"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="kw">seq</span>(<span class="dv">0</span>,<span class="kw">ncol</span>(sm_sparse), <span class="dt">by=</span><span class="dv">1</span>)){</span>
+<span id="cb10-42"><a href="#cb10-42"></a>      <span class="cf">if</span>(<span class="kw">round</span>(i<span class="op">/</span>metric_map_size,<span class="dv">0</span>)<span class="op">==</span>sm_feat_id){</span>
+<span id="cb10-43"><a href="#cb10-43"></a>        L[i,]=<span class="dv">0</span></span>
+<span id="cb10-44"><a href="#cb10-44"></a>        scoressm[i,]=<span class="op">-</span><span class="dv">1</span></span>
+<span id="cb10-45"><a href="#cb10-45"></a>      }</span>
+<span id="cb10-46"><a href="#cb10-46"></a></span>
+<span id="cb10-47"><a href="#cb10-47"></a>      <span class="cf">if</span>(i<span class="op">%%</span>metric_map_size<span class="op">==</span>mm_feat_id){</span>
+<span id="cb10-48"><a href="#cb10-48"></a>        L[i,]=<span class="dv">0</span></span>
+<span id="cb10-49"><a href="#cb10-49"></a>        scoressm[i,]=<span class="op">-</span><span class="dv">1</span></span>
+<span id="cb10-50"><a href="#cb10-50"></a>      }</span>
+<span id="cb10-51"><a href="#cb10-51"></a>    }</span>
+<span id="cb10-52"><a href="#cb10-52"></a></span>
+<span id="cb10-53"><a href="#cb10-53"></a>    X[maxind,]=<span class="dv">1</span></span>
+<span id="cb10-54"><a href="#cb10-54"></a>  }</span>
+<span id="cb10-55"><a href="#cb10-55"></a></span>
+<span id="cb10-56"><a href="#cb10-56"></a>  <span class="co">#results&lt;-r_sstr(sketch_map_indexes=sm_feat_list, metric_map_indexes=mm_feat_list, time=end(start_time))</span></span>
+<span id="cb10-57"><a href="#cb10-57"></a></span>
+<span id="cb10-58"><a href="#cb10-58"></a>  results&lt;-<span class="kw">constructClass</span>(<span class="dt">smi=</span>sm_feat_list,<span class="dt">mmi=</span>mm_feat_list,<span class="dt">t=</span><span class="kw">end</span>(start_time))</span>
+<span id="cb10-59"><a href="#cb10-59"></a>  <span class="kw">return</span>(results)</span>
+<span id="cb10-60"><a href="#cb10-60"></a>}</span></code></pre></div>
+</div>
+</div>
+<div id="page-rank-funtion-implementation" class="section level3">
+<h3>Page Rank funtion implementation</h3>
+<p>From the <em>igraph</em> library the function <em>page_rank</em> will be used. The function takes as argument the Similarity Matrix (in this case a sparsed matrix in order to improve the preformance) and the algorithm criteria based on Google’s Page Rank algorithm: number of iteration, alpha as the damping parameter (the probability at each node to be changed as per Page observations [6]) and the tolerance used to check convergence in power method solver (this means, avoid the reduction of the initial matrix during the iteration process [8]).</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">library</span>(igraph)</span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="co">#&gt; Warning: package &#39;igraph&#39; was built under R version 3.5.3</span></span>
+<span id="cb11-3"><a href="#cb11-3"></a><span class="co">#&gt; </span></span>
+<span id="cb11-4"><a href="#cb11-4"></a><span class="co">#&gt; Attaching package: &#39;igraph&#39;</span></span>
+<span id="cb11-5"><a href="#cb11-5"></a><span class="co">#&gt; The following objects are masked from &#39;package:stats&#39;:</span></span>
+<span id="cb11-6"><a href="#cb11-6"></a><span class="co">#&gt; </span></span>
+<span id="cb11-7"><a href="#cb11-7"></a><span class="co">#&gt;     decompose, spectrum</span></span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="co">#&gt; The following object is masked from &#39;package:base&#39;:</span></span>
+<span id="cb11-9"><a href="#cb11-9"></a><span class="co">#&gt; </span></span>
+<span id="cb11-10"><a href="#cb11-10"></a><span class="co">#&gt;     union</span></span>
+<span id="cb11-11"><a href="#cb11-11"></a></span>
+<span id="cb11-12"><a href="#cb11-12"></a>pr_scores&lt;-<span class="cf">function</span>(simMatrix){</span>
+<span id="cb11-13"><a href="#cb11-13"></a></span>
+<span id="cb11-14"><a href="#cb11-14"></a>  sparseMatrix&lt;-<span class="kw">as</span>(simMatrix,<span class="st">&quot;sparseMatrix&quot;</span>)</span>
+<span id="cb11-15"><a href="#cb11-15"></a></span>
+<span id="cb11-16"><a href="#cb11-16"></a>  g&lt;-<span class="kw">graph_from_adjacency_matrix</span>(sparseMatrix, <span class="dt">mode =</span> <span class="st">&quot;directed&quot;</span>)</span>
+<span id="cb11-17"><a href="#cb11-17"></a>  prr&lt;-<span class="kw">page_rank</span>(g)<span class="op">$</span>vector</span>
+<span id="cb11-18"><a href="#cb11-18"></a>  scoresSimMa2=<span class="kw">matrix</span>(prr,<span class="dt">nrow=</span><span class="kw">length</span>(prr))</span>
+<span id="cb11-19"><a href="#cb11-19"></a></span>
+<span id="cb11-20"><a href="#cb11-20"></a>  <span class="kw">return</span>(scoresSimMa2)</span>
+<span id="cb11-21"><a href="#cb11-21"></a>}</span></code></pre></div>
+<!-- ### Page Rank funtion implementation -->
+<!-- The function takes as argument the Similarity Matrix and the algorithm criteria based on its4land[1] and NetworkX [7] implementation: number of iteration, alpha as the damping parameter (the probability at each node to be changed as per Page observations [6]) and the tolerance used to check convergence in power method solver (this means, avoid the reduction of the initial matrix during the iteration process [8]): -->
+<!-- The function is structured as follows: -->
+<!-- ```{r echo=TRUE} -->
+<!-- library(SparseM) -->
+<!-- library(readr) -->
+<!-- library('Matrix') -->
+<!-- library(textTinyR) -->
+<!-- alpha=0.85 -->
+<!-- max_iter=200 -->
+<!-- tol=1e-10 -->
+<!-- ``` -->
+<!-- As the compatibility matrix has a considerable size, it is needed to Sparse the Matrix to optimize the execution -->
+<!-- ```{r echo=TRUE} -->
+<!-- #Argument setting -->
+<!-- X<- data.matrix(read_csv(system.file("extdata/foo.csv", package = "sstr"))) -->
+<!-- #Number of pairs -->
+<!-- n=ncol(X) -->
+<!-- #With compression, index zero values for saving memory -->
+<!-- sparseMX<-as(X,"sparseMatrix") -->
+<!-- #specific method to sumarize sparse matrices -->
+<!-- sumRowS<-sparse_Sums(sparseMX, rowSums = TRUE) -->
+<!-- #Substracting the nonzero Rows -->
+<!-- nozero=which(sumRowS!=0) -->
+<!-- ``` -->
+<!-- Next, it is necessary to normalize the graph. Our initial guess is that every feature has a score of 1, -->
+<!-- ```{r echo=TRUE} -->
+<!--  for(i in nozero){ -->
+<!--     (sparseMX[i:i+1,]=sparseMX[i:i+1,]*(1/sumRowS[i])) -->
+<!--     sr=sparse_Sums(sparseMX, rowSums = TRUE) -->
+<!--     dangle<-ifelse(sr==0,1.0/n,0) -->
+<!--   } -->
+<!--   initial_guess=1/n -->
+<!--   scores= matrix(1,nrow=n)/n -->
+<!--   dangleM=matrix(dangle,nrow = n) -->
+<!-- ``` -->
+<!-- Finally, the process to identify the links scores is made by reviewing the features according to the iterations wanted and checking the convergence tolerance -->
+<!-- ```{r echo=TRUE} -->
+<!-- for (k in seq(1,max_iter, by=1)){ -->
+<!--     print(i) -->
+<!--     prev_scores = scores -->
+<!--     print (prev_scores) -->
+<!--     #Here we have the detail, we are calling the sparseMatrix data nxn -->
+<!--     #We need all to be numeric -->
+<!--     scores=(alpha*((scores[,])*sparseMX@x+(t(dangleM)%*%(prev_scores)))+(1-alpha)*sum(prev_scores)/n) -->
+<!--     scores_max =max(abs(scores)) -->
+<!--     if (scores_max == 0.0){ -->
+<!--       scores_max = 1.0 -->
+<!--     } -->
+<!--     err = abs(max(matrix(scores)  - as.vector(prev_scores))) / scores_max -->
+<!--     if (err < n * tol){ -->
+<!--       (scores) -->
+<!--     } -->
+<!--   } -->
+<!-- ``` -->
+</div>
+<div id="execution" class="section level3">
+<h3>Execution</h3>
+<p>Finally, to acomplish the goal of initial structure analysis, the Spectral Solution Technique is executed by using an already calculated similarity matrix and the Pagerank scores. In order to use the main function, the arguments for the analysis should be handed. For the current analysis, a Sketch Map with 41 features and the corresponding Similarity Matrix and Scores are set as input:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">library</span>(sstr)</span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="co">#&gt; </span></span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="co">#&gt; Attaching package: &#39;sstr&#39;</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a><span class="co">#&gt; The following objects are masked _by_ &#39;.GlobalEnv&#39;:</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a><span class="co">#&gt; </span></span>
+<span id="cb12-6"><a href="#cb12-6"></a><span class="co">#&gt;     construct_l, construct_x, end, maxScoreIndx, metricm_size,</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a><span class="co">#&gt;     pr_scores, simat, start</span></span>
+<span id="cb12-8"><a href="#cb12-8"></a><span class="co">#&gt; The following objects are masked from &#39;package:stats&#39;:</span></span>
+<span id="cb12-9"><a href="#cb12-9"></a><span class="co">#&gt; </span></span>
+<span id="cb12-10"><a href="#cb12-10"></a><span class="co">#&gt;     end, start</span></span></code></pre></div>
+<p>In this case, from the package the Similarity Matrix and the Scores are recovered</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">library</span>(readr)</span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="co"># From the datasample</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a>dataset &lt;-<span class="st"> </span><span class="kw">data.matrix</span>(<span class="kw">read.csv</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata/foo.csv&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;sstr&quot;</span>)))</span>
+<span id="cb13-4"><a href="#cb13-4"></a>scoreSimMa &lt;-<span class="st"> </span><span class="kw">data.matrix</span>(<span class="kw">read_csv</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata/scores2.csv&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;sstr&quot;</span>)))</span>
+<span id="cb13-5"><a href="#cb13-5"></a><span class="co">#&gt; Parsed with column specification:</span></span>
+<span id="cb13-6"><a href="#cb13-6"></a><span class="co">#&gt; cols(</span></span>
+<span id="cb13-7"><a href="#cb13-7"></a><span class="co">#&gt;   `0` = col_double()</span></span>
+<span id="cb13-8"><a href="#cb13-8"></a><span class="co">#&gt; )</span></span>
+<span id="cb13-9"><a href="#cb13-9"></a></span>
+<span id="cb13-10"><a href="#cb13-10"></a><span class="co"># From the function code</span></span>
+<span id="cb13-11"><a href="#cb13-11"></a>scorePR&lt;-<span class="kw">pr_scores</span>(dataset)</span></code></pre></div>
+<p>Next, it is needed to define the size of the first input graph:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>smap_size=<span class="dv">41</span></span></code></pre></div>
+<p>With these, is possible to call the main function, <em>simat</em>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co">#?simat</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a></span>
+<span id="cb15-3"><a href="#cb15-3"></a><span class="co"># Data Sample</span></span>
+<span id="cb15-4"><a href="#cb15-4"></a>(result_object_sstr&lt;-<span class="kw">simat</span>(<span class="dt">path=</span>dataset,<span class="dt">sketch_map_size=</span>smap_size,<span class="dt">scoressm=</span>scoreSimMa))</span>
+<span id="cb15-5"><a href="#cb15-5"></a><span class="co">#&gt; $sketch_map_indexes</span></span>
+<span id="cb15-6"><a href="#cb15-6"></a><span class="co">#&gt;  [1]  8 41 17 21 36 40  4  2  3 25 22 31 28 30 23 35 19 32 26  5 37 29 16</span></span>
+<span id="cb15-7"><a href="#cb15-7"></a><span class="co">#&gt; [24] 39  1  7  0  6  9 10 11 12 13 14 15 18 20 24 27 33 34 38</span></span>
+<span id="cb15-8"><a href="#cb15-8"></a><span class="co">#&gt; </span></span>
+<span id="cb15-9"><a href="#cb15-9"></a><span class="co">#&gt; $metric_map_indexes</span></span>
+<span id="cb15-10"><a href="#cb15-10"></a><span class="co">#&gt;  [1] 111  95   0 104 109 107 103  69  87  68  71  85  83  70   3  84  23</span></span>
+<span id="cb15-11"><a href="#cb15-11"></a><span class="co">#&gt; [18]  31  38   4   2 102  57 108 105 112   1  58  59  60  61  62  63  64</span></span>
+<span id="cb15-12"><a href="#cb15-12"></a><span class="co">#&gt; [35]  65  66  67  72  73  74  75  76</span></span>
+<span id="cb15-13"><a href="#cb15-13"></a><span class="co">#&gt; </span></span>
+<span id="cb15-14"><a href="#cb15-14"></a><span class="co">#&gt; $time</span></span>
+<span id="cb15-15"><a href="#cb15-15"></a><span class="co">#&gt; Time difference of 9.383115 secs</span></span>
+<span id="cb15-16"><a href="#cb15-16"></a><span class="co">#&gt; </span></span>
+<span id="cb15-17"><a href="#cb15-17"></a><span class="co">#&gt; attr(,&quot;class&quot;)</span></span>
+<span id="cb15-18"><a href="#cb15-18"></a><span class="co">#&gt; [1] &quot;sst_r&quot;</span></span>
+<span id="cb15-19"><a href="#cb15-19"></a></span>
+<span id="cb15-20"><a href="#cb15-20"></a><span class="co"># Page Rank Code</span></span>
+<span id="cb15-21"><a href="#cb15-21"></a>(result_object_sstr2&lt;-<span class="kw">simat</span>(<span class="dt">path=</span>dataset,<span class="dt">sketch_map_size=</span>smap_size,<span class="dt">scoressm=</span>scorePR))</span>
+<span id="cb15-22"><a href="#cb15-22"></a><span class="co">#&gt; $sketch_map_indexes</span></span>
+<span id="cb15-23"><a href="#cb15-23"></a><span class="co">#&gt;  [1]  8 17 15  4 36 23 25 19  1 16 31 22 35 21  2  3 30 41 26 28 37  5 18</span></span>
+<span id="cb15-24"><a href="#cb15-24"></a><span class="co">#&gt; [24] 32 40  7  0  6  9 10 11 12 13 14 20 24 27 29 33 34 38 39</span></span>
+<span id="cb15-25"><a href="#cb15-25"></a><span class="co">#&gt; </span></span>
+<span id="cb15-26"><a href="#cb15-26"></a><span class="co">#&gt; $metric_map_indexes</span></span>
+<span id="cb15-27"><a href="#cb15-27"></a><span class="co">#&gt;  [1] 111   0 108 103 109  23  69   2 105  57  85  87  86 104  83  71  70</span></span>
+<span id="cb15-28"><a href="#cb15-28"></a><span class="co">#&gt; [18]  95   1  84  39  24 102  38 107 112   3  58  59  60  61  62  63  64</span></span>
+<span id="cb15-29"><a href="#cb15-29"></a><span class="co">#&gt; [35]  65  66  67  68  72  73  74  75</span></span>
+<span id="cb15-30"><a href="#cb15-30"></a><span class="co">#&gt; </span></span>
+<span id="cb15-31"><a href="#cb15-31"></a><span class="co">#&gt; $time</span></span>
+<span id="cb15-32"><a href="#cb15-32"></a><span class="co">#&gt; Time difference of 8.229664 secs</span></span>
+<span id="cb15-33"><a href="#cb15-33"></a><span class="co">#&gt; </span></span>
+<span id="cb15-34"><a href="#cb15-34"></a><span class="co">#&gt; attr(,&quot;class&quot;)</span></span>
+<span id="cb15-35"><a href="#cb15-35"></a><span class="co">#&gt; [1] &quot;sst_r&quot;</span></span></code></pre></div>
+</div>
+</div>
+<div id="sec4" class="section level2">
+<h2>4. Analysis</h2>
+<p>The output is a <em>sstr</em> class object containing the pair of features with the highest affinity score for the input A (sketch_map), input B (metric_map) and the execution time.</p>
+<p>It is important to hand the execution time in order to see the discrepances between different levels of complexity for similarity matrices. The user will be able to calculate the most likely matches for two input graphs for <em>n</em> fetures in the input A graph.</p>
+<p>In Python, the computing time for the scores was <em>0.039893s</em>, and from the Similarity Matrix, a total of <em>41</em> pairs from the Sketch Map and <em>41</em> from the Metric map were returned from the algorithm implementation. On the other side, the R code took <em><code>9.38311505317688</code>s</em>, and one additional pair was derived for both the Sketch Map and the Metric Map, for a total of <em>42</em> pairs each. For the Sketch Map, both algorithms have <em>98%</em> of similar results whereas for the Metric Map the have only <em>51%</em> of similar results.</p>
+</div>
+<div id="sec5" class="section level2">
+<h2>5. Discussion of results</h2>
+<p>By using the same input for the <em>Page Rank scores</em> and the <em>Similarity matrix</em>, it was expected to have similar results. This statement was valid only for the <em>Sketch Map</em> features. For the <em>Metric Map</em>, the differences in the result maybe because of the implementation of a different but analogous function that extracts the maximum score (calculated eigenvalue for the specific set of features). The <em>nlargest</em> function from Python behaves differently from the <em>max function</em> in R even though both concepts are meant to extract the highest value. Furthermore, the fact that the vectorization process in R for sparse matrices indicates that it is necessary to analyze the influence of the scores over the space complexity algorithms execution.</p>
+<p>Additionally, to the output differences, as the data structure is managed differently, the computing time for each one of the iteration increases.</p>
+</div>
+<div id="sec6" class="section level2">
+<h2>6. Final notes</h2>
+<p>For the current package, the only observation returned from the <em>Check Package</em> process is regarding the size of the example data as it is larger than 10 Mb. As the similarity matrixes are as big as the possible combinations, the code handled this situation with the first attempt of Pagerank by using the <em>SparseMatrices</em>. Different libraries are available for creating Sparse Matrices, and the returned structures may differ, making further implementations processes space complexity variable.</p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>[1] Chipofya, M., Jan, S., Schultz C., Schwering, A. (2017). Towards Smart Sketch Maps for Community-driven Land Tenure Recording Activities. AGILE Conference.</p>
+<p>[2] Schwering, A. (2008). Approaches to Semantic Similarity Measurement for Geo-Spatial Data: A Survey. Transactions in GIS, 12(1), 5–29.</p>
+<p>[3] Chipofya, M., Schwering, A. &amp; Binor, T. (2013). Matching Qualitative Spatial Scene Descriptions á la Tabu.</p>
+<p>[4] Chipofya, M., Schultz, C. &amp; Schwering, A. (2016). A metaheuristic approach for efficient and effective sketch-to-metric map alignment. International Journal of Geographical Information Science, 30:2, 405-425.</p>
+<p>[5] Bunke H., Jiang X (2000). Graph Matching and Similarity. In: Teodorescu HN., Mlynek D., Kandel A., Zimmermann HJ. (eds) Intelligent Systems and Interfaces. International Series in Intelligent Technologies, vol 15. Springer, Boston, MA.</p>
+<p>[6] Leordeanu, M., &amp; Hebert, M. (2005). A spectral technique for correspondence problems using pairwise constraints. Tenth IEEE International Conference on Computer Vision (ICCV’05) Volume 1.</p>
+<p>[7] Page, L., Brin, S., Motwani, R., &amp; Winograd, T. (1999). The PageRank Citation Ranking: Bringing Order to the Web.</p>
+<p><a href="https://www.rdocumentation.org/">[8] R Documentation</a></p>
+<p><a href="https://igraph.org/r/doc/page_rank.html">[9] iGrahp for R</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
